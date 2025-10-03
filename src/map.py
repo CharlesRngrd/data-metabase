@@ -22,5 +22,5 @@ for feature in map_json["features"]:
         f"{property['nomDepartement']} - {property['nomCirconscription']}"
     )
 
-with open("map.geojson", "w") as json_file:
+with open("assets/map.geojson", "w") as json_file:
     json.dump(map_json, json_file)
