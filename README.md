@@ -24,5 +24,3 @@ Voici l'URL à utiliser : https://raw.githubusercontent.com/CharlesRngrd/data_de
 
 - La carte dépasse les 5 Mo autorités par défaut sur Metabase<br>
 Voici la variable d'environnement à modifier : `MB_CUSTOM_MAPS_MAX_FILE_SIZE_MB`
-
-- Le plugin duckdb est compatible avec la version `duckdb=1.3.1`
