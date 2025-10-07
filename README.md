@@ -2,9 +2,14 @@
 
 ## Metabase
 
+### Installation des dépendances python
+
+- Executer `pip install -r requirements.txt`
+
 ### Chargement des données
 
-- Executer `python src/data.py`
+- Executer `python src/data_ingestion.py`
+- Executer `python src/data_transformation.py`
 
 ### Chargement de Metabase
 

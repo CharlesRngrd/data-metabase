@@ -27,10 +27,9 @@ def get_data_election(label, tour):
 
     print(f"Nombre de circonscriptions : {len(df)}")
 
-    con = duckdb.connect("assets/data.duckdb")
-    con.execute(f"CREATE TABLE IF NOT EXISTS {label} AS SELECT * FROM df")
-
-    print(con.execute(f"SELECT * FROM {label} LIMIT 5").fetchdf())
+    with duckdb.connect("assets/data.duckdb") as con:
+        con.execute(f"CREATE OR REPLACE TABLE {label} AS SELECT * FROM df")
+        con.table(label).show()
 
 
 get_data_election("election_2024_tour_1", 0)
