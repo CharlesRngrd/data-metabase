@@ -16,11 +16,12 @@ map_json["features"][:] = [
 ]
 
 for feature in map_json["features"]:
-    property = feature["properties"]
+    prop = feature["properties"]
 
-    property["labelCirconscription"] = (
-        f"{property['nomDepartement']} - {property['nomCirconscription']}"
-    )
+    feature["properties"] = {
+        "codeCirconscription": prop["codeCirconscription"],
+        "labelCirconscription": f"{prop['nomDepartement']} ({prop['codeDepartement']}) - {prop['nomCirconscription']}",
+    }
 
 with open("assets/map.geojson", "w") as json_file:
     json.dump(map_json, json_file)
