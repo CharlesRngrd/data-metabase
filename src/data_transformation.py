@@ -15,6 +15,29 @@ with duckdb.connect("assets/data.duckdb") as con:
         "Exprimés": "exprime",
     }
 
+    label_parti = {
+        # Rassemblement National
+        "RN": "Rassemblement National",
+        "UDI": "Rassemblement National",
+        "UXD": "Rassemblement National",
+        "EXD": "Rassemblement National",
+        # Les Républicains
+        "LR": "Les Républicains",
+        "DVD": "Les Républicains",
+        # Nouveau Front Populaire
+        "UG": "Nouveau Front Populaire",
+        "SOC": "Nouveau Front Populaire",
+        "ECO": "Nouveau Front Populaire",
+        "DVG": "Nouveau Front Populaire",
+        # Ensemble
+        "ENS": "Ensemble",
+        "HOR": "Ensemble",
+        "DVC": "Ensemble",
+        # Autre
+        "REG": "Régionaliste",
+        "DIV": "Divers",
+    }
+
     def clean_pourcentage(serie):
         for old, new in ({"%": "", ",": "."}).items():
             serie = serie.str.replace(old, new)
@@ -50,7 +73,6 @@ with duckdb.connect("assets/data.duckdb") as con:
         df_final["candidat_denomination"] = (
             df_final["candidat_nom"] + " " + df_final["candidat_prenom"]
         )
-        df_final = df_final.drop(columns=["candidat_nom", "candidat_prenom"])
 
         return df_final
 
@@ -62,6 +84,8 @@ with duckdb.connect("assets/data.duckdb") as con:
     ]
 
     df = pd.concat([df_tour_2, df_tour_2_complement])
+
+    df["candidat_parti"] = df["candidat_parti"].replace(label_parti)
 
     df["departement_code"] = df["departement_code"].str.pad(
         width=2, side="left", fillchar="0"
