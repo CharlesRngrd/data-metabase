@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  metabase-duckdb:
+    build:
+      context: .
+    ports:
+      - "3000:3000"
+    environment:
+      MB_CUSTOM_MAPS_MAX_FILE_SIZE_MB: "20"
+    volumes:
+      - ./assets/data.duckdb:/app/data.duckdb
+    container_name: metabase-duckdb

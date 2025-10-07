@@ -13,8 +13,7 @@
 
 ### Chargement de Metabase
 
-- Executer `docker build -t metabase-duckdb .`
-- Executer `docker run -d -p 3000:3000 -e "MB_CUSTOM_MAPS_MAX_FILE_SIZE_MB=20" -v ${PWD}/assets/data.duckdb:/app/data.duckdb --name metabase-duckdb metabase-duckdb`
+- Executer `docker-compose up -d`
 
 ### Chargement de la carte
 
