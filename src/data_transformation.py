@@ -74,6 +74,14 @@ with duckdb.connect("assets/data.duckdb") as con:
             df_final["candidat_nom"] + " " + df_final["candidat_prenom"]
         )
 
+        df_final["departement_code"] = df_final["departement_code"].str.pad(
+            width=2, side="left", fillchar="0"
+        )
+
+        df_final["circonscription_code"] = df_final["circonscription_code"].str.pad(
+            width=4, side="left", fillchar="0"
+        )
+
         return df_final
 
     df_tour_1 = reshape_data(df_tour_1, columns)
@@ -86,13 +94,6 @@ with duckdb.connect("assets/data.duckdb") as con:
     df = pd.concat([df_tour_2, df_tour_2_complement])
 
     df["candidat_parti"] = df["candidat_parti"].replace(label_parti)
-
-    df["departement_code"] = df["departement_code"].str.pad(
-        width=2, side="left", fillchar="0"
-    )
-    df["circonscription_code"] = df["circonscription_code"].str.pad(
-        width=4, side="left", fillchar="0"
-    )
 
     df = df.sort_values(
         ["circonscription_code", "candidat_voix"], ascending=[True, False]
