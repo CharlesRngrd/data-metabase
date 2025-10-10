@@ -1,13 +1,30 @@
 version: '3.8'
 
 services:
-  metabase-duckdb:
+  metabase:
+    container_name: metabase
     build:
       context: .
     ports:
       - "3000:3000"
     environment:
       MB_CUSTOM_MAPS_MAX_FILE_SIZE_MB: "20"
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: metabase
+      MB_DB_PORT: 5432
+      MB_DB_USER: user
+      MB_DB_PASS: password
+      MB_DB_HOST: metabase-data
+      MB_SITE_URL: http://localhost:3000
     volumes:
       - ./assets/data.duckdb:/app/data.duckdb
-    container_name: metabase-duckdb
+    depends_on:
+      - metabase-data
+  metabase-data:
+    container_name: metabase-data
+    image: postgres:18
+    environment:
+      POSTGRES_DB: metabase
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    restart: unless-stopped
