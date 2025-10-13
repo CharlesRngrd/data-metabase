@@ -200,19 +200,23 @@ with duckdb.connect("assets/data.duckdb") as con:
 
     df["candidat_parti"] = df["candidat_parti"].replace(label_parti)
 
+    df = df[df["candidat_voix_pourcentage"].notna()]
+
+    df["abstention_pourcentage"] = clean_pourcentage(df["abstention_pourcentage"])
+    df["candidat_voix_pourcentage"] = clean_pourcentage(df["candidat_voix_pourcentage"])
+
+    df = df[df["candidat_voix_pourcentage"] >= 25]
+
     df = df.sort_values(
         ["annee", "circonscription_code", "candidat_voix"],
         ascending=[True, True, False],
     )
 
-    df["candidat_rang"] = df.groupby(["annee", "circonscription_code"])[
-        "candidat_voix"
-    ].rank(method="min", ascending=False)
+    grouped = df.groupby(["annee", "circonscription_code"])["candidat_voix_pourcentage"]
 
-    df = df[df["candidat_rang"].notna()]
-
-    df["abstention_pourcentage"] = clean_pourcentage(df["abstention_pourcentage"])
-    df["candidat_voix_pourcentage"] = clean_pourcentage(df["candidat_voix_pourcentage"])
+    df["candidat_rang"] = grouped.rank(method="min", ascending=False)
+    df["candidat_rang_1_ecart"] = grouped.diff()
+    df["candidat_rang_1_ecart"] = df["candidat_rang_1_ecart"].fillna(0)
 
     df = df[df["candidat_voix_pourcentage"] >= 25]
 
