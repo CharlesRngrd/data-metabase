@@ -215,8 +215,8 @@ with duckdb.connect("assets/data.duckdb") as con:
     grouped = df.groupby(["annee", "circonscription_code"])["candidat_voix_pourcentage"]
 
     df["candidat_rang"] = grouped.rank(method="min", ascending=False)
-    df["candidat_rang_1_ecart"] = grouped.diff()
-    df["candidat_rang_1_ecart"] = df["candidat_rang_1_ecart"].fillna(0)
+    df["candidat_rang_1_score"] = grouped.transform('max')
+    df["candidat_rang_1_ecart"] = df["candidat_voix_pourcentage"] - df["candidat_rang_1_score"]
 
     df = df[df["candidat_voix_pourcentage"] >= 25]
 
