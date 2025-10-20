@@ -1,6 +1,6 @@
 # Installation
 
-## Metabase
+## Metabase + Pandas
 
 ### Installation des dépendances python
 
@@ -28,3 +28,17 @@ Voici l'URL à utiliser : https://raw.githubusercontent.com/CharlesRngrd/data_de
 
 - La carte dépasse les 5 Mo autorités par défaut sur Metabase<br>
 Voici la variable d'environnement à modifier : `MB_CUSTOM_MAPS_MAX_FILE_SIZE_MB`
+
+## Metabase + pySpark
+
+### Installation des dépendances python
+
+- Executer `pip install -r requirements.txt`
+
+### Installation de Java
+
+- Téléchargement de Java 21 https://www.oracle.com/fr/java/technologies/downloads/#java21
+- Téléchargement de Hadoop Winutils https://github.com/steveloughran/winutils/blob/master/hadoop-3.0.0/bin/winutils.exe
+- Ajout Java 21 dans les variables d'environnement :
+    - `setx JAVA_HOME "C:\Program Files\Java\jdk-21"`
+    - `setx PATH "%JAVA_HOME%\bin;%PATH%"`
