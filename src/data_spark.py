@@ -1,6 +1,6 @@
 from functools import reduce
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import lit
+from pyspark.sql.functions import col, concat, concat_ws, lit, lpad
 from typing import Dict
 import duckdb
 import os
@@ -92,6 +92,25 @@ def pivot_data(df: DataFrame, columns: Dict[str, str]) -> DataFrame:
     return reduce(DataFrame.unionByName, dfs)
 
 
+def clean_common(df: DataFrame) -> DataFrame:
+    """Nettoyage commun à tous les jeux de données"""
+
+    df = df.withColumn(
+        "candidat_denomination",
+        concat_ws(" ", col("candidat_nom"), col("candidat_prenom")),
+    )
+
+    df = df.withColumn(
+        "departement_code", lpad(col("departement_code").cast("string"), 2, "0")
+    )
+
+    df = df.withColumn(
+        "circonscription_code", lpad(col("circonscription_code").cast("string"), 4, "0")
+    )
+
+    return df
+
+
 def preprocess_2022_format(df: DataFrame) -> DataFrame:
     """Nettoyage spécifique aux datasets de 2022"""
 
@@ -107,8 +126,8 @@ def preprocess_2022_format(df: DataFrame) -> DataFrame:
         "Sièges",
     ]
 
-    for col in to_remane_cols:
-        df = df.withColumnRenamed(col, f"{col} 1")
+    for column in to_remane_cols:
+        df = df.withColumnRenamed(column, f"{column} 1")
 
     n_unnamed = len([c for c in df.columns if c.startswith("Unnamed")])
     n_groups = n_unnamed // len(to_remane_cols)
@@ -119,6 +138,36 @@ def preprocess_2022_format(df: DataFrame) -> DataFrame:
         new_cols += [f"{col} {i}" for col in to_remane_cols]
 
     return df.toDF(*new_cols)
+
+
+def postprocess_2022_values(df: DataFrame) -> DataFrame:
+    """Nettoyage spécifique aux datasets de 2022"""
+
+    df = df.withColumn(
+        "circonscription_code",
+        concat(
+            col("departement_code"),
+            lpad(col("circonscription_code").cast("string"), 2, "0"),
+        ),
+    )
+
+    return df
+
+
+def merge_tour_1_2(df_tour_1: DataFrame, df_tour_2: DataFrame, year: int) -> DataFrame:
+    """Concatenation du 1er et 2e tour"""
+
+    df_extra = df_tour_1.join(
+        df_tour_2.select("circonscription_code").distinct(),
+        on="circonscription_code",
+        how="left",
+    )
+
+    df = df_tour_2.unionByName(df_extra)
+
+    df = df.withColumn("annee", lit(year))
+
+    return df
 
 
 with duckdb.connect("assets/data.duckdb") as con:
@@ -133,7 +182,17 @@ with duckdb.connect("assets/data.duckdb") as con:
     for df in ["df_2022_tour_1", "df_2022_tour_2"]:
         dfs[df] = preprocess_2022_format(dfs[df])
 
-    for df in ["df_2022_tour_1"]:
+    for df in ["df_2022_tour_1", "df_2022_tour_2", "df_2024_tour_1", "df_2024_tour_2"]:
         dfs[df] = pivot_data(dfs[df], columns)
 
-    dfs["df_2022_tour_1"].show(5)
+    for df in ["df_2022_tour_1", "df_2022_tour_2"]:
+        dfs[df] = postprocess_2022_values(dfs[df])
+
+    for df in ["df_2022_tour_1", "df_2022_tour_2", "df_2024_tour_1", "df_2024_tour_2"]:
+        dfs[df] = clean_common(dfs[df])
+
+    df_2022 = merge_tour_1_2(dfs["df_2022_tour_1"], dfs["df_2022_tour_2"], 2022)
+    df_2024 = merge_tour_1_2(dfs["df_2024_tour_1"], dfs["df_2024_tour_2"], 2024)
+
+    df_2022.show()
+    df_2024.show()
