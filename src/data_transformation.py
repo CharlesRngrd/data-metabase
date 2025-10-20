@@ -63,9 +63,7 @@ label_parti = {
 }
 
 
-def load_dataframes(
-    con: duckdb.DuckDBPyConnection, df_name: str
-) -> Dict[str, pd.DataFrame]:
+def load_dataframes(df_name: str) -> Dict[str, pd.DataFrame]:
     """Charge une table depuis DuckDB"""
 
     return con.sql(f"SELECT * FROM election_{df_name}").fetchdf()
@@ -172,12 +170,9 @@ def merge_tour_1_2(
 
 
 with duckdb.connect("assets/data.duckdb") as con:
-    tour_all = ["df_2022_tour_1", "df_2022_tour_2", "df_2024_tour_1", "df_2024_tour_2"]
-    tour_2022 = ["df_2022_tour_1", "df_2022_tour_2"]
-
     dfs: Dict[str, pd.DataFrame] = dict()
     for df in ["2022_tour_1", "2022_tour_2", "2024_tour_1", "2024_tour_2"]:
-        dfs[f"df_{df}"] = load_dataframes(con, df)
+        dfs[f"df_{df}"] = load_dataframes(df)
 
     dfs["df_2022_tour_1"]["Unnamed fake"] = ""
 
@@ -215,8 +210,11 @@ with duckdb.connect("assets/data.duckdb") as con:
     grouped = df.groupby(["annee", "circonscription_code"])["candidat_voix_pourcentage"]
 
     df["candidat_rang"] = grouped.rank(method="min", ascending=False)
-    df["candidat_rang_1_score"] = grouped.transform('max')
-    df["candidat_rang_1_ecart"] = df["candidat_voix_pourcentage"] - df["candidat_rang_1_score"]
+    df["candidat_rang_1_score"] = grouped.transform("max")
+
+    df["candidat_rang_1_ecart"] = (
+        df["candidat_voix_pourcentage"] - df["candidat_rang_1_score"]
+    )
 
     df = df[df["candidat_voix_pourcentage"] >= 25]
 
