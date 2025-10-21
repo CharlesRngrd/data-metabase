@@ -4,12 +4,14 @@ from pyspark.sql.functions import (
     col,
     concat,
     concat_ws,
+    length,
     lit,
     lpad,
     max,
     rank,
     regexp_replace,
     round,
+    when,
 )
 from typing import Dict
 import duckdb
@@ -138,13 +140,8 @@ def clean_common(df: DataFrame) -> DataFrame:
         concat_ws(" ", col("candidat_nom"), col("candidat_prenom")),
     )
 
-    df = df.withColumn(
-        "departement_code", lpad(col("departement_code").cast("string"), 2, "0")
-    )
-
-    df = df.withColumn(
-        "circonscription_code", lpad(col("circonscription_code").cast("string"), 4, "0")
-    )
+    df = custom_padding(df, "departement_code", 2)
+    df = custom_padding(df, "circonscription_code", 4)
 
     df = clean_pourcentage_column(df, "abstention_pourcentage")
     df = clean_pourcentage_column(df, "candidat_voix_pourcentage")
@@ -160,6 +157,17 @@ def clean_pourcentage_column(df: DataFrame, column_name: str) -> DataFrame:
         regexp_replace(
             regexp_replace(col(column_name).cast("string"), "%", ""), ",", "."
         ).cast("double"),
+    )
+
+
+def custom_padding(df: DataFrame, column_name: str, num: int) -> DataFrame:
+    """Ajoute un padding en permettant des code plus long pour les DOM-TOM"""
+
+    return df.withColumn(
+        column_name,
+        when(
+            length(col(column_name)) < num, lpad(col(column_name), num, "0")
+        ).otherwise(col(column_name)),
     )
 
 
@@ -274,8 +282,6 @@ with duckdb.connect("assets/data.duckdb") as con:
         round(col("candidat_voix_pourcentage") - col("candidat_rang_1_score"), 2),
     )
 
-    con = duckdb.connect()
     con.register("df", df.toArrow())
-
     con.execute("CREATE OR REPLACE TABLE election_mart_spark AS SELECT * FROM df")
     con.table("election_mart_spark").show()

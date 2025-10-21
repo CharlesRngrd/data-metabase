@@ -214,7 +214,7 @@ with duckdb.connect("assets/data.duckdb") as con:
 
     df["candidat_rang_1_ecart"] = (
         df["candidat_voix_pourcentage"] - df["candidat_rang_1_score"]
-    )
+    ).round(2)
 
     con.execute("CREATE OR REPLACE TABLE election_mart AS SELECT * FROM df")
     con.table("election_mart").show()
