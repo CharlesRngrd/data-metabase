@@ -216,7 +216,5 @@ with duckdb.connect("assets/data.duckdb") as con:
         df["candidat_voix_pourcentage"] - df["candidat_rang_1_score"]
     )
 
-    df = df[df["candidat_voix_pourcentage"] >= 25]
-
     con.execute("CREATE OR REPLACE TABLE election_mart AS SELECT * FROM df")
     con.table("election_mart").show()

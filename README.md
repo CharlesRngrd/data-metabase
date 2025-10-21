@@ -31,11 +31,18 @@ Voici la variable d'environnement à modifier : `MB_CUSTOM_MAPS_MAX_FILE_SIZE_MB
 
 ## Metabase + pySpark
 
-### Installation des dépendances python
+### Option 1 avec Conda
+
+- Executer `conda create -n pyspark-env python=3.10 openjdk=17 pyspark=4.0.1 jupyterlab duckdb`
+- Executer `conda activate pyspark-env`
+
+### Option 1 sans Conda (possibles erreurs avec python 3.13)
+
+**Installation des dépendances python**
 
 - Executer `pip install -r requirements.txt`
 
-### Installation de Java
+**Installation de Java**
 
 - Téléchargement de Java 21 https://www.oracle.com/fr/java/technologies/downloads/#java21
 - Téléchargement de Hadoop Winutils https://github.com/steveloughran/winutils/blob/master/hadoop-3.0.0/bin/winutils.exe

@@ -1,6 +1,6 @@
 from functools import reduce
 from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import col, concat, concat_ws, lit, lpad
+from pyspark.sql.functions import col, concat, concat_ws, lit, lpad, regexp_replace
 from typing import Dict
 import duckdb
 import os
@@ -38,14 +38,42 @@ columns_dynamic = {
     "% Voix/exprimés": "candidat_voix_pourcentage",
 }
 
+label_parti = {
+    # Rassemblement National
+    "RN": "Rassemblement National",
+    "UXD": "Rassemblement National",
+    "EXD": "Rassemblement National",
+    "DSV": "Rassemblement National",
+    # Les Républicains
+    "LR": "Les Républicains",
+    "DVD": "Les Républicains",
+    # Ensemble
+    "ENS": "Ensemble",
+    "HOR": "Ensemble",
+    "UDI": "Ensemble",
+    "DVC": "Ensemble",
+    # Nouveau Front Populaire
+    "NUP": "Nouveau Front Populaire",
+    "UG": "Nouveau Front Populaire",
+    "SOC": "Nouveau Front Populaire",
+    "ECO": "Nouveau Front Populaire",
+    "DVG": "Nouveau Front Populaire",
+    "EXG": "Nouveau Front Populaire",
+    "FI": "Nouveau Front Populaire",
+    # Autre
+    "REG": "Régionaliste",
+    "DIV": "Divers",
+}
+
 
 def get_session() -> SparkSession:
     """Initialise la session Spark"""
 
-    venv_python = os.path.join(os.getcwd(), ".venv", "Scripts", "python.exe")
+    python = r"C:\\Users\\charl\\miniconda3\\envs\\pyspark-env\\python.exe"
 
-    os.environ["PYSPARK_PYTHON"] = venv_python
-    os.environ["PYSPARK_DRIVER_PYTHON"] = venv_python
+    os.environ["PYSPARK_PYTHON"] = python
+    os.environ["PYSPARK_DRIVER_PYTHON"] = python
+
     os.environ["HADOOP_HOME"] = "C:\\hadoop\\hadoop-3.0.0"
 
     session = (
@@ -109,6 +137,17 @@ def clean_common(df: DataFrame) -> DataFrame:
     )
 
     return df
+
+
+def clean_pourcentage_column(df: DataFrame, column_name: str) -> DataFrame:
+    """Convertie une valeur du type '10,0%' en 10.0"""
+
+    return df.withColumn(
+        column_name,
+        regexp_replace(regexp_replace(col(column_name), "%", ""), ",", ".").cast(
+            "double"
+        ),
+    )
 
 
 def preprocess_2022_format(df: DataFrame) -> DataFrame:
@@ -194,5 +233,23 @@ with duckdb.connect("assets/data.duckdb") as con:
     df_2022 = merge_tour_1_2(dfs["df_2022_tour_1"], dfs["df_2022_tour_2"], 2022)
     df_2024 = merge_tour_1_2(dfs["df_2024_tour_1"], dfs["df_2024_tour_2"], 2024)
 
-    df_2022.show()
-    df_2024.show()
+    df = reduce(DataFrame.unionByName, [df_2022, df_2024])
+
+    df = df.na.replace(label_parti, subset=["candidat_parti"])
+
+    df = df.filter(col("candidat_voix_pourcentage").isNotNull())
+
+    df = clean_pourcentage_column(df, "abstention_pourcentage")
+    df = clean_pourcentage_column(df, "candidat_voix_pourcentage")
+
+    df = df.filter(col("candidat_voix_pourcentage") >= 25)
+
+    df.show()
+
+    df = df.sort(
+        col("annee").asc(),
+        col("circonscription_code").asc(),
+        col("candidat_voix").desc(),
+    )
+
+    df.show()
