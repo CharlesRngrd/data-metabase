@@ -1,6 +1,16 @@
 from functools import reduce
-from pyspark.sql import SparkSession, DataFrame
-from pyspark.sql.functions import col, concat, concat_ws, lit, lpad, regexp_replace
+from pyspark.sql import SparkSession, DataFrame, Window
+from pyspark.sql.functions import (
+    col,
+    concat,
+    concat_ws,
+    lit,
+    lpad,
+    max,
+    rank,
+    regexp_replace,
+    round,
+)
 from typing import Dict
 import duckdb
 import os
@@ -136,6 +146,9 @@ def clean_common(df: DataFrame) -> DataFrame:
         "circonscription_code", lpad(col("circonscription_code").cast("string"), 4, "0")
     )
 
+    df = clean_pourcentage_column(df, "abstention_pourcentage")
+    df = clean_pourcentage_column(df, "candidat_voix_pourcentage")
+
     return df
 
 
@@ -144,9 +157,9 @@ def clean_pourcentage_column(df: DataFrame, column_name: str) -> DataFrame:
 
     return df.withColumn(
         column_name,
-        regexp_replace(regexp_replace(col(column_name), "%", ""), ",", ".").cast(
-            "double"
-        ),
+        regexp_replace(
+            regexp_replace(col(column_name).cast("string"), "%", ""), ",", "."
+        ).cast("double"),
     )
 
 
@@ -199,7 +212,7 @@ def merge_tour_1_2(df_tour_1: DataFrame, df_tour_2: DataFrame, year: int) -> Dat
     df_extra = df_tour_1.join(
         df_tour_2.select("circonscription_code").distinct(),
         on="circonscription_code",
-        how="left",
+        how="left_anti",
     )
 
     df = df_tour_2.unionByName(df_extra)
@@ -238,13 +251,7 @@ with duckdb.connect("assets/data.duckdb") as con:
     df = df.na.replace(label_parti, subset=["candidat_parti"])
 
     df = df.filter(col("candidat_voix_pourcentage").isNotNull())
-
-    df = clean_pourcentage_column(df, "abstention_pourcentage")
-    df = clean_pourcentage_column(df, "candidat_voix_pourcentage")
-
     df = df.filter(col("candidat_voix_pourcentage") >= 25)
-
-    df.show()
 
     df = df.sort(
         col("annee").asc(),
@@ -252,4 +259,23 @@ with duckdb.connect("assets/data.duckdb") as con:
         col("candidat_voix").desc(),
     )
 
-    df.show()
+    window = Window.partitionBy("annee", "circonscription_code").orderBy(
+        col("candidat_voix_pourcentage").desc()
+    )
+
+    df = df.withColumn("candidat_rang", rank().over(window))
+
+    df = df.withColumn(
+        "candidat_rang_1_score", max("candidat_voix_pourcentage").over(window)
+    )
+
+    df = df.withColumn(
+        "candidat_rang_1_ecart",
+        round(col("candidat_voix_pourcentage") - col("candidat_rang_1_score"), 2),
+    )
+
+    con = duckdb.connect()
+    con.register("df", df.toArrow())
+
+    con.execute("CREATE OR REPLACE TABLE election_mart_spark AS SELECT * FROM df")
+    con.table("election_mart_spark").show()
