@@ -16,3 +16,4 @@ with duckdb.connect("assets/data.duckdb") as con:
     print(df_test.shape)
 
     df_test = df_test.drop_duplicates(keep=False)
+    print(df_test.shape)

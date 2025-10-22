@@ -9,7 +9,7 @@
 ### Chargement des données
 
 - Executer `python src/data_ingestion.py`
-- Executer `python src/data_transformation.py`
+- Executer `python src/data_transformation/with_pandas.py`
 
 ### Chargement de Metabase
 
