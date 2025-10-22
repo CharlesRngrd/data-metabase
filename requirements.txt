@@ -1,4 +1,5 @@
 duckdb
 pandas
+polars
 pyspark
 requests
